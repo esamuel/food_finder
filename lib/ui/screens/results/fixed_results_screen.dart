@@ -204,13 +204,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
             onPressed: _isSavingToHistory ? null : _saveToHistory,
             tooltip: 'Save to History',
           ),
-          IconButton(
-            icon: const Icon(Icons.camera_alt),
-            onPressed: () {
-              Navigator.of(context).pushReplacementNamed('/camera');
-            },
-            tooltip: 'Take Another Photo',
-          ),
         ],
       ),
       body: _isLoading
@@ -276,31 +269,17 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   Widget _buildResultsContent() {
     if (widget.results.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-                'No food detected. Please try again with a clearer image.'),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.camera_alt),
-              label: const Text('Take Another Photo'),
-              onPressed: () {
-                Navigator.of(context).pushReplacementNamed('/camera');
-              },
-            ),
-          ],
-        ),
+      return const Center(
+        child: Text('No food detected. Please try again with a clearer image.'),
       );
     }
 
     return SingleChildScrollView(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Image section - centered
-          Center(child: _buildImageSection()),
+          // Image section
+          _buildImageSection(),
 
           // Results section
           Padding(
@@ -334,24 +313,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 
   Widget _buildImageSection() {
-    // Calculate the screen width to make a perfect square
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    // Use the smaller dimension to ensure the image fits on screen
-    final imageSize =
-        screenWidth > screenHeight / 2 ? screenHeight / 2 : screenWidth;
-
     return Container(
-      height: imageSize,
-      width: imageSize,
-      margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      height: 250,
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.1),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-          width: 1,
-        ),
-        borderRadius: BorderRadius.circular(8),
       ),
       child: _imageLoadError
           ? const Center(
@@ -368,41 +334,22 @@ class _ResultsScreenState extends State<ResultsScreen> {
   Widget _buildImageContent() {
     try {
       if (widget.imageBytes != null) {
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            Center(
-              child: Image.memory(
-                widget.imageBytes!,
-                fit: BoxFit
-                    .contain, // Changed from cover to contain to show the entire image
-                errorBuilder: (context, error, stackTrace) {
-                  debugPrint('Error loading image bytes: $error');
-                  setState(() {
-                    _imageLoadError = true;
-                  });
-                  return const Center(
-                    child: Icon(
-                      Icons.broken_image,
-                      size: 64,
-                      color: Colors.grey,
-                    ),
-                  );
-                },
+        return Image.memory(
+          widget.imageBytes!,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('Error loading image bytes: $error');
+            setState(() {
+              _imageLoadError = true;
+            });
+            return const Center(
+              child: Icon(
+                Icons.broken_image,
+                size: 64,
+                color: Colors.grey,
               ),
-            ),
-            // Add a subtle border overlay instead of gradient
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.black.withOpacity(0.1),
-                    width: 1,
-                  ),
-                ),
-              ),
-            ),
-          ],
+            );
+          },
         );
       } else if (widget.imagePath != null && !kIsWeb) {
         final file = File(widget.imagePath!);
@@ -417,41 +364,22 @@ class _ResultsScreenState extends State<ResultsScreen> {
           );
         }
 
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            Center(
-              child: Image.file(
-                file,
-                fit: BoxFit
-                    .contain, // Changed from cover to contain to show the entire image
-                errorBuilder: (context, error, stackTrace) {
-                  debugPrint('Error loading image file: $error');
-                  setState(() {
-                    _imageLoadError = true;
-                  });
-                  return const Center(
-                    child: Icon(
-                      Icons.broken_image,
-                      size: 64,
-                      color: Colors.grey,
-                    ),
-                  );
-                },
+        return Image.file(
+          file,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('Error loading image file: $error');
+            setState(() {
+              _imageLoadError = true;
+            });
+            return const Center(
+              child: Icon(
+                Icons.broken_image,
+                size: 64,
+                color: Colors.grey,
               ),
-            ),
-            // Add a subtle border overlay instead of gradient
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.black.withOpacity(0.1),
-                    width: 1,
-                  ),
-                ),
-              ),
-            ),
-          ],
+            );
+          },
         );
       } else {
         return const Center(

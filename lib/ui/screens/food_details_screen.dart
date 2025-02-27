@@ -3,9 +3,9 @@ import '../../core/models/food_item.dart';
 
 class FoodDetailsScreen extends StatelessWidget {
   final FoodItem foodItem;
-  
+
   const FoodDetailsScreen({Key? key, required this.foodItem}) : super(key: key);
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,9 +47,9 @@ class FoodDetailsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Food name and category
             Text(
               foodItem.name,
@@ -66,9 +66,9 @@ class FoodDetailsScreen extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Food description
             const Text(
               'Description',
@@ -78,10 +78,10 @@ class FoodDetailsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(foodItem.description),
-            
+            Text(foodItem.description ?? 'No description available'),
+
             const SizedBox(height: 24),
-            
+
             // Nutrition information
             const Text(
               'Nutritional Information',
@@ -92,9 +92,9 @@ class FoodDetailsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _buildNutritionCard(context),
-            
+
             const SizedBox(height: 24),
-            
+
             // More details
             const Text(
               'More information coming soon...',
@@ -107,7 +107,7 @@ class FoodDetailsScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildNutritionCard(BuildContext context) {
     return Card(
       elevation: 2,
@@ -150,8 +150,9 @@ class FoodDetailsScreen extends StatelessWidget {
       ),
     );
   }
-  
-  Widget _buildNutritionRow(String label, String value, IconData icon, Color color) {
+
+  Widget _buildNutritionRow(
+      String label, String value, IconData icon, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
