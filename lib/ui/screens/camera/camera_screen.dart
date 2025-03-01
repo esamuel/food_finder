@@ -29,8 +29,6 @@ class _CameraScreenState extends State<CameraScreen>
   bool _isRearCameraSelected = true;
   bool _isAnalyzing = false;
   final ImagePicker _picker = ImagePicker();
-  Uint8List? _capturedImageBytes;
-  String? _capturedImagePath;
 
   @override
   void initState() {
@@ -152,7 +150,7 @@ class _CameraScreenState extends State<CameraScreen>
   Future<void> _captureImage() async {
     if (kIsWeb) {
       // For web, use image picker
-      await _pickImage(ImageSource.camera);
+      await _pickFromGallery();
       return;
     }
 
@@ -168,11 +166,6 @@ class _CameraScreenState extends State<CameraScreen>
 
     try {
       final XFile imageFile = await _controller!.takePicture();
-      _capturedImagePath = imageFile.path;
-
-      // Read the image bytes for processing
-      final bytes = await imageFile.readAsBytes();
-      _capturedImageBytes = bytes;
 
       // Process the image for ML model
       setState(() {
@@ -190,11 +183,7 @@ class _CameraScreenState extends State<CameraScreen>
       if (mounted) {
         Navigator.of(context).pushReplacementNamed(
           '/results',
-          arguments: {
-            'results': results,
-            'imageBytes': _capturedImageBytes,
-            'imagePath': _capturedImagePath,
-          },
+          arguments: {'results': results},
         );
       }
     } catch (e) {
@@ -211,9 +200,10 @@ class _CameraScreenState extends State<CameraScreen>
     }
   }
 
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _pickFromGallery() async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(source: source);
+      final XFile? pickedFile =
+          await _picker.pickImage(source: ImageSource.gallery);
 
       if (pickedFile == null) {
         return;
@@ -223,10 +213,6 @@ class _CameraScreenState extends State<CameraScreen>
         _isAnalyzing = true;
       });
 
-      // Store the image path and bytes
-      _capturedImagePath = pickedFile.path;
-      _capturedImageBytes = await pickedFile.readAsBytes();
-
       // Get the food recognition service from provider
       final foodRecognitionService =
           Provider.of<FoodRecognitionServiceInterface>(context, listen: false);
@@ -234,10 +220,9 @@ class _CameraScreenState extends State<CameraScreen>
       List<RecognitionResult> results;
 
       if (kIsWeb) {
-        // For web, use bytes directly
-        results =
-            await foodRecognitionService.recognizeFood(_capturedImageBytes!);
-        print('Image picked: ${pickedFile.path}');
+        // For web, read as bytes instead of using File
+        final Uint8List bytes = await pickedFile.readAsBytes();
+        results = await foodRecognitionService.recognizeFood(bytes);
       } else {
         // For mobile, use File
         final File file = File(pickedFile.path);
@@ -248,11 +233,7 @@ class _CameraScreenState extends State<CameraScreen>
       if (mounted) {
         Navigator.of(context).pushReplacementNamed(
           '/results',
-          arguments: {
-            'results': results,
-            'imageBytes': _capturedImageBytes,
-            'imagePath': _capturedImagePath,
-          },
+          arguments: {'results': results},
         );
       }
     } catch (e) {
@@ -266,10 +247,6 @@ class _CameraScreenState extends State<CameraScreen>
         });
       }
     }
-  }
-
-  Future<void> _pickFromGallery() async {
-    await _pickImage(ImageSource.gallery);
   }
 
   @override
@@ -289,172 +266,58 @@ class _CameraScreenState extends State<CameraScreen>
       );
     }
 
-    // Calculate screen dimensions for square preview
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    // Use the smaller dimension to ensure the preview fits on screen
-    final previewSize =
-        screenWidth > screenHeight - 200 ? screenHeight - 200 : screenWidth;
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Back button row
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0, left: 8.0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    const Expanded(
-                      child: Center(
-                        child: Text(
-                          'Take a Photo',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
+        child: Stack(
+          children: [
+            // Camera Preview or Web Placeholder
+            Positioned.fill(
+              child: kIsWeb
+                  ? _buildWebCameraPlaceholder()
+                  : (_controller != null && _controller!.value.isInitialized
+                      ? CameraPreview(_controller!)
+                      : Container(
+                          color: Colors.black,
+                          child: const Center(
+                            child: Text(
+                              'Loading Camera...',
+                              style: TextStyle(color: Colors.white),
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 48), // Balance the back button
-                  ],
+                        )),
+            ),
+
+            // Overlay UI
+            Positioned.fill(
+              child: _buildCameraOverlay(),
+            ),
+
+            // Camera Controls
+            Positioned(
+              bottom: 20,
+              left: 0,
+              right: 0,
+              child: _buildCameraControls(),
+            ),
+
+            // Back button
+            Positioned(
+              top: 20,
+              left: 20,
+              child: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                  size: 28,
                 ),
+                onPressed: () => Navigator.of(context).pop(),
               ),
-
-              const SizedBox(height: 16),
-
-              // Camera guidance text
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Text(
-                  'Position food in the center of the frame',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    shadows: [
-                      Shadow(
-                        offset: const Offset(1.0, 1.0),
-                        blurRadius: 3.0,
-                        color: Colors.black.withOpacity(0.5),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Camera Preview or Web Placeholder in a square container
-              Container(
-                width: previewSize,
-                height: previewSize,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 2,
-                  ),
-                ),
-                clipBehavior: Clip.hardEdge,
-                child: Stack(
-                  children: [
-                    // Camera preview or placeholder
-                    kIsWeb
-                        ? _buildWebCameraPlaceholder()
-                        : (_controller != null &&
-                                _controller!.value.isInitialized
-                            ? ClipRect(
-                                child: Center(
-                                  child: AspectRatio(
-                                    aspectRatio: 1.0,
-                                    child: Transform.scale(
-                                      scale: _getPreviewScale(),
-                                      child: Center(
-                                        child: CameraPreview(_controller!),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              )
-                            : Container(
-                                color: Colors.black,
-                                child: const Center(
-                                  child: Text(
-                                    'Loading Camera...',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              )),
-
-                    // Overlay guides
-                    _buildFrameGuides(),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Bottom guidance text
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Text(
-                  'Tap the button to identify the food',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    shadows: [
-                      Shadow(
-                        offset: const Offset(1.0, 1.0),
-                        blurRadius: 3.0,
-                        color: Colors.black.withOpacity(0.5),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Camera Controls
-              _buildCameraControls(),
-
-              const SizedBox(height: 20),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
-  }
-
-  // Calculate the scale to maintain aspect ratio while filling a square
-  double _getPreviewScale() {
-    if (_controller == null || !_controller!.value.isInitialized) {
-      return 1.0;
-    }
-
-    // Get the camera preview size
-    final previewSize = _controller!.value.previewSize!;
-    final cameraAspectRatio = previewSize.height / previewSize.width;
-
-    // We want to fill a square (aspect ratio 1.0)
-    // If camera is wider than tall, we need to scale up to fill height
-    // If camera is taller than wide, we need to scale up to fill width
-    return cameraAspectRatio > 1.0
-        ? cameraAspectRatio
-        : 1.0 / cameraAspectRatio;
   }
 
   Widget _buildWebCameraPlaceholder() {
@@ -464,71 +327,28 @@ class _CameraScreenState extends State<CameraScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Camera icon with square frame
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                // Square frame
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                // Camera icon
-                Icon(
-                  Icons.camera_alt,
-                  size: 50,
-                  color: Colors.white.withOpacity(0.6),
-                ),
-              ],
+            Icon(
+              Icons.camera_alt,
+              size: 80,
+              color: Colors.white.withOpacity(0.6),
             ),
             const SizedBox(height: 16),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Camera preview not available on web',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                ),
+            const Text(
+              'Camera preview not available on web',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
               ),
             ),
-            const SizedBox(height: 16),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 16,
-              runSpacing: 16,
-              children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.camera_alt, size: 18),
-                  label: const Text('Take Photo'),
-                  onPressed: () => _pickImage(ImageSource.camera),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.photo_library, size: 18),
-                  label: const Text('Gallery'),
-                  onPressed: _pickFromGallery,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
-                    backgroundColor: Theme.of(context).colorScheme.secondary,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.photo_library),
+              label: const Text('Select from Gallery'),
+              onPressed: _pickFromGallery,
+              style: ElevatedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
             ),
           ],
         ),
@@ -536,71 +356,41 @@ class _CameraScreenState extends State<CameraScreen>
     );
   }
 
-  Widget _buildFrameGuides() {
-    return Stack(
+  Widget _buildCameraOverlay() {
+    return Column(
       children: [
-        // Center crosshair
-        Center(
-          child: Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Colors.white.withOpacity(0.5),
-                width: 1,
-              ),
-              borderRadius: BorderRadius.circular(40),
+        // Top section - camera guidance
+        Container(
+          padding: const EdgeInsets.symmetric(
+            vertical: 16.0,
+            horizontal: 24.0,
+          ),
+          alignment: Alignment.center,
+          child: const Text(
+            'Position food in the center of the frame',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
-        // Corner guides
-        _buildCornerGuide(Alignment.topLeft),
-        _buildCornerGuide(Alignment.topRight),
-        _buildCornerGuide(Alignment.bottomLeft),
-        _buildCornerGuide(Alignment.bottomRight),
-      ],
-    );
-  }
 
-  Widget _buildCornerGuide(Alignment alignment) {
-    return Align(
-      alignment: alignment,
-      child: Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: alignment == Alignment.topLeft ||
-                      alignment == Alignment.topRight
-                  ? Colors.white.withOpacity(0.7)
-                  : Colors.transparent,
-              width: 2,
-            ),
-            bottom: BorderSide(
-              color: alignment == Alignment.bottomLeft ||
-                      alignment == Alignment.bottomRight
-                  ? Colors.white.withOpacity(0.7)
-                  : Colors.transparent,
-              width: 2,
-            ),
-            left: BorderSide(
-              color: alignment == Alignment.topLeft ||
-                      alignment == Alignment.bottomLeft
-                  ? Colors.white.withOpacity(0.7)
-                  : Colors.transparent,
-              width: 2,
-            ),
-            right: BorderSide(
-              color: alignment == Alignment.topRight ||
-                      alignment == Alignment.bottomRight
-                  ? Colors.white.withOpacity(0.7)
-                  : Colors.transparent,
-              width: 2,
+        const Spacer(),
+
+        // Bottom section - additional guidance
+        Container(
+          padding: const EdgeInsets.only(bottom: 80),
+          alignment: Alignment.center,
+          child: const Text(
+            'Tap the button to identify the food',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -622,8 +412,7 @@ class _CameraScreenState extends State<CameraScreen>
 
           // Capture button
           GestureDetector(
-            onTap:
-                kIsWeb ? () => _pickImage(ImageSource.camera) : _captureImage,
+            onTap: _captureImage,
             child: Container(
               height: 70,
               width: 70,

@@ -45,92 +45,88 @@ class _RecognitionItemState extends State<RecognitionItem>
 
   @override
   Widget build(BuildContext context) {
-    try {
-      final confidencePercentage =
-          (widget.result.confidence * 100).toStringAsFixed(1);
+    final confidencePercentage =
+        (widget.result.confidence * 100).toStringAsFixed(1);
 
-      return GestureDetector(
-        onTap: widget.onTap,
-        onTapDown: (_) => _controller.forward(),
-        onTapUp: (_) => _controller.reverse(),
-        onTapCancel: () => _controller.reverse(),
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _scaleAnimation.value,
-              child: child,
-            );
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: widget.isSelected
-                  ? Theme.of(context).colorScheme.primary.withAlpha(26)
-                  : Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: widget.isSelected
-                  ? Border.all(
-                      color: Theme.of(context).colorScheme.primary, width: 2)
-                  : Border.all(color: Colors.grey.withAlpha(77)),
-              boxShadow: widget.isSelected
-                  ? [
-                      BoxShadow(
-                        color:
-                            Theme.of(context).colorScheme.primary.withAlpha(51),
-                        blurRadius: 8,
-                        spreadRadius: 1,
-                        offset: const Offset(0, 2),
-                      )
-                    ]
-                  : null,
-            ),
-            child: Row(
-              children: [
-                if (widget.isSelected)
-                  Container(
-                    margin: const EdgeInsets.only(right: 12),
-                    child: Icon(
-                      Icons.check_circle,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 22,
-                    ),
-                  ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.result.label,
-                        style: TextStyle(
-                          fontSize: widget.isSelected ? 16 : 15,
-                          fontWeight: widget.isSelected
-                              ? FontWeight.bold
-                              : FontWeight.w500,
-                          color: widget.isSelected
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).textTheme.bodyLarge?.color,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      _buildConfidenceIndicator(
-                          context, widget.result.confidence),
-                    ],
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) => _controller.reverse(),
+      onTapCancel: () => _controller.reverse(),
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: child,
+          );
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: widget.isSelected
+                ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: widget.isSelected
+                ? Border.all(
+                    color: Theme.of(context).colorScheme.primary, width: 2)
+                : Border.all(color: Colors.grey.withOpacity(0.3)),
+            boxShadow: widget.isSelected
+                ? [
+                    BoxShadow(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.2),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              if (widget.isSelected)
+                Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 22,
                   ),
                 ),
-              ],
-            ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.result.label,
+                      style: TextStyle(
+                        fontSize: widget.isSelected ? 16 : 15,
+                        fontWeight: widget.isSelected
+                            ? FontWeight.bold
+                            : FontWeight.w500,
+                        color: widget.isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildConfidenceIndicator(
+                        context, widget.result.confidence),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-      );
-    } catch (e) {
-      debugPrint('Error rendering RecognitionItem: $e');
-      return const SizedBox
-          .shrink(); // Return an empty widget if there's an error
-    }
+      ),
+    );
   }
 
   Widget _buildConfidenceIndicator(BuildContext context, double confidence) {
@@ -177,7 +173,7 @@ class _RecognitionItemState extends State<RecognitionItem>
               width: 100,
               height: 6,
               decoration: BoxDecoration(
-                color: Colors.grey.withAlpha(51),
+                color: Colors.grey.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),

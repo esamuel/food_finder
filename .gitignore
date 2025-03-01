@@ -43,32 +43,39 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Web related
-/web/firebase-config.js
+# Firebase config files
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
 
-# Environment variables
+# Environment files
 .env
-.env.local
+.env.*
 
-# iOS specific
-**/ios/Pods/
-**/ios/.symlinks/
-**/ios/Flutter/App.framework
-**/ios/Flutter/Flutter.framework
-**/ios/Flutter/Generated.xcconfig
-**/ios/Flutter/app.flx
-**/ios/Flutter/app.zip
-**/ios/Flutter/flutter_assets/
-**/ios/ServiceDefinitions.json
-**/ios/Runner/GeneratedPluginRegistrant.*
+# Supabase local development
+**/supabase/.branches
+**/supabase/.temp
 
-# macOS specific
-**/macos/Flutter/GeneratedPluginRegistrant.swift
-**/macos/Flutter/Flutter-Debug.xcconfig
-**/macos/Flutter/Flutter-Release.xcconfig
-**/macos/Flutter/Flutter-Profile.xcconfig
+# Local configuration
+lib/core/config/local_config.dart
 
-# Coverage
-coverage/
-*.lcov
-.test_coverage.dart
+# Generated files
+*.g.dart
+*.freezed.dart
+
+# Web related
+/web/firebase-messaging-sw.js
+
+# macOS
+/macos/Flutter/GeneratedPluginRegistrant.swift
+/macos/Flutter/ephemeral
+
+# Windows
+/windows/flutter/generated_plugin_registrant.cc
+/windows/flutter/generated_plugin_registrant.h
+/windows/flutter/generated_plugins.cmake
+
+# Linux
+/linux/flutter/generated_plugin_registrant.cc
+/linux/flutter/generated_plugin_registrant.h
+/linux/flutter/generated_plugins.cmake

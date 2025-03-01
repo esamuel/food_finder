@@ -45,13 +45,23 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<!-- Additional permissions -->
+	<!-- Camera and Photo Library permissions -->
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to scan and identify food items</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs photos access to let you select images of food for identification</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app needs microphone access for video features</string>
+	
+	<!-- File system access permissions -->
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>This app needs access to the documents folder to save food recognition data</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>This app needs access to the downloads folder to save food recognition data</string>
+	<key>NSFileProviderDomainUsageDescription</key>
+	<string>This app needs access to file storage to save food recognition data</string>
+	
+	<!-- Network permissions -->
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app needs local network access for debugging</string>
 	<key>NSAppTransportSecurity</key>
@@ -59,9 +69,17 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	
+	<!-- Flutter specific settings -->
 	<key>io.flutter.embedded_views_preview</key>
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	
+	<!-- Fix for iOS 14+ -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_dartobservatory._tcp</string>
+	</array>
 </dict>
 </plist> 

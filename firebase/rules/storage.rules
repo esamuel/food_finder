@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow users to upload and view their own food images
+    match /users/{userId}/food_images/{imageId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId
+                  && request.resource.size < 5 * 1024 * 1024  // 5MB max
+                  && request.resource.contentType.matches('image/.*');
+    }
+    
+    // Allow users to update their profile pictures
+    match /users/{userId}/profile_image {
+      allow read: if request.auth != null;  // Anyone can view profile pictures
+      allow write: if request.auth != null && request.auth.uid == userId
+                  && request.resource.size < 2 * 1024 * 1024  // 2MB max
+                  && request.resource.contentType.matches('image/.*');
+    }
+    
+    // Public food item images (read-only)
+    match /food_items/{imageId} {
+      allow read: if request.auth != null;
+      allow write: if false;  // Only admins can upload food item images
+    }
+  }
+} 

@@ -142,17 +142,6 @@ class FoodFinderApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       initialRoute: AppRoutes.home,
       onGenerateRoute: AppRoutes.generateRoute,
-      builder: (context, child) {
-        // Apply additional constraints for mobile-like experience
-        return MediaQuery(
-          // Set a fixed device pixel ratio to ensure consistent sizing
-          data: MediaQuery.of(context).copyWith(
-            textScaleFactor: 1.0,
-            devicePixelRatio: 1.0,
-          ),
-          child: child!,
-        );
-      },
     );
   }
 }
@@ -274,7 +263,14 @@ class _HomeScreenState extends State<HomeScreen> {
               Column(
                 children: [
                   ElevatedButton.icon(
-                    onPressed: _takePhoto,
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Camera functionality is mocked in this version'),
+                        ),
+                      );
+                    },
                     icon: const Icon(Icons.camera_alt),
                     label: const Text('Take a Photo'),
                     style: ElevatedButton.styleFrom(
@@ -294,56 +290,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _takePhoto() async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? pickedFile = await picker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 1000,
-        maxHeight: 1000,
-        imageQuality: 85,
-      );
-
-      if (pickedFile == null) {
-        // User canceled the camera
-        return;
-      }
-
-      setState(() {
-        _selectedImagePath = pickedFile.path;
-        _isAnalyzing = true;
-      });
-
-      debugPrint('Photo taken: ${pickedFile.path}');
-
-      // Handle differently for web and mobile
-      if (kIsWeb) {
-        // For web, read as bytes
-        final bytes = await pickedFile.readAsBytes();
-        setState(() {
-          _selectedImageBytes = bytes;
-        });
-        debugPrint('Read image bytes for web: ${bytes.length} bytes');
-      }
-
-      // Automatically analyze the image
-      await _analyzeSelectedImage();
-    } catch (e) {
-      debugPrint('Error taking photo: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error taking photo: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isAnalyzing = false;
-        });
-      }
-    }
   }
 
   Future<void> _pickFromGallery() async {
@@ -378,10 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
         debugPrint('Read image bytes for web: ${bytes.length} bytes');
       }
 
-      // Don't automatically analyze - let user confirm
-      setState(() {
-        _isAnalyzing = false;
-      });
+      await _analyzeSelectedImage();
     } catch (e) {
       debugPrint('Error picking image: $e');
       if (mounted) {
@@ -413,10 +356,6 @@ class _HomeScreenState extends State<HomeScreen> {
       final foodRecognitionService =
           Provider.of<FoodRecognitionServiceInterface>(context, listen: false);
 
-      // Get the database service for saving the image
-      final databaseService =
-          Provider.of<DatabaseServiceInterface>(context, listen: false);
-
       List<RecognitionResult> results;
       Uint8List? imageBytes;
 
@@ -444,22 +383,6 @@ class _HomeScreenState extends State<HomeScreen> {
       for (var result in results) {
         debugPrint(
             '  - ${result.label}: ${(result.confidence * 100).toStringAsFixed(1)}%');
-      }
-
-      // Save the image to the database if we have results
-      if (results.isNotEmpty && imageBytes != null) {
-        // In a real app, we would upload the image to storage and save the URL
-        // For this mock version, we'll just log that we would save it
-        debugPrint('Would save image for food: ${results.first.label}');
-
-        // Mock saving the image to the database
-        // In a real app, this would be a call to a storage service
-        final mockImageUrl =
-            'https://example.com/food_images/${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-        // Add the image to the food item's data
-        // In a real app, this would update the food item in the database
-        debugPrint('Image URL saved: $mockImageUrl');
       }
 
       // Navigate to results screen

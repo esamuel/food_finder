@@ -1,79 +1,67 @@
-# Food Finder
+# Food Finder App
 
-A Flutter application that helps users identify food items through image recognition and provides nutritional information.
+A Flutter application for identifying foods and providing nutritional information.
 
 ## Features
 
-- **Food Recognition**: Take a photo or select an image from your gallery to identify food items
-- **Nutritional Information**: Get detailed nutritional facts about recognized food items
-- **Category Browsing**: Browse foods by categories like Fruits, Vegetables, Grains, etc.
-- **Recent Discoveries**: Keep track of recently identified food items
-- **Responsive Design**: Works on mobile and web platforms
+- Food recognition using camera or gallery images
+- Detailed nutritional information for identified foods
+- Favorites system to save foods you like
+- History tracking of all scanned foods
+- Beautiful UI with food categories and detailed food information
 
-## Screenshots
+## Web Deployment
 
-*Screenshots will be added here*
+This app can be deployed as a web application using Vercel. Follow these steps:
 
-## Getting Started
+### Option 1: Deploy with Vercel CLI
 
-### Prerequisites
+1. Install Vercel CLI:
+   ```
+   npm install -g vercel
+   ```
 
-- Flutter SDK (latest version recommended)
-- Dart SDK
-- Android Studio / VS Code with Flutter extensions
-- iOS Simulator / Android Emulator for mobile testing
+2. Build the Flutter web app:
+   ```
+   flutter build web
+   ```
 
-### Installation
+3. Deploy to Vercel:
+   ```
+   cd build/web
+   vercel
+   ```
 
-1. Clone this repository:
-```bash
-git clone https://github.com/yourusername/food_finder.git
-```
+### Option 2: Deploy with Vercel Dashboard
 
-2. Navigate to the project directory:
-```bash
-cd food_finder
-```
+1. Push your code to a GitHub repository
+2. Create a new project on Vercel and connect to your GitHub repository
+3. Configure the build settings:
+   - Build Command: `flutter/bin/flutter build web --release`
+   - Output Directory: `build/web`
+   - Install Command: `if cd flutter; then git pull && cd .. ; else git clone https://github.com/flutter/flutter.git; fi && ls && flutter/bin/flutter doctor && flutter/bin/flutter clean && flutter/bin/flutter config --enable-web`
 
-3. Install dependencies:
-```bash
-flutter pub get
-```
+4. Deploy your project
 
-4. Run the app:
-```bash
-flutter run
-```
+## Local Development
 
-For web deployment:
-```bash
-flutter run -d chrome
-```
+1. Clone the repository
+2. Install dependencies:
+   ```
+   flutter pub get
+   ```
+3. Run the app:
+   ```
+   flutter run
+   ```
 
-## Architecture
+## Supabase Integration
 
-The app follows a clean architecture approach with:
-
-- **UI Layer**: Flutter widgets and screens
-- **Service Layer**: Food recognition, nutrition data, and user preferences
-- **Model Layer**: Data models for food items, recognition results, etc.
-
-## Technologies Used
-
-- Flutter for cross-platform UI
-- TensorFlow Lite for on-device image recognition
-- Mock services for development and testing
-
-## Future Enhancements
-
-- User accounts and personalization
-- Meal planning and tracking
-- Barcode scanning for packaged foods
-- Recipe suggestions based on identified ingredients
+This app uses Supabase for authentication and data storage. Make sure to set up your Supabase project and update the configuration in `lib/main.dart`.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT
 
 ## Acknowledgments
 

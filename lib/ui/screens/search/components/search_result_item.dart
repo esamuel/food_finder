@@ -34,21 +34,20 @@ class SearchResultItem extends StatelessWidget {
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: (food.imageUrl != null && food.imageUrl!.isNotEmpty)
+                child: food.imageUrl.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          food.imageUrl!,
+                          food.imageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              _buildPlaceholder(),
+                          errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
                         ),
                       )
                     : _buildPlaceholder(),
               ),
-
+              
               const SizedBox(width: 16),
-
+              
               // Food details
               Expanded(
                 child: Column(
@@ -80,7 +79,7 @@ class SearchResultItem extends StatelessWidget {
                   ],
                 ),
               ),
-
+              
               // Arrow indicator
               const Icon(
                 Icons.chevron_right,

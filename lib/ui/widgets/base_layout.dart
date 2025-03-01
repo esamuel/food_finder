@@ -59,9 +59,7 @@ class BaseLayout extends StatelessWidget {
           : null,
       body: SafeArea(
         bottom: !showBottomNav,
-        child: kIsWeb || MediaQuery.of(context).size.width > 600
-            ? _buildConstrainedLayout(context)
-            : body,
+        child: kIsWeb ? _buildWebLayout(context) : body,
       ),
       bottomNavigationBar:
           showBottomNav ? _buildBottomNavigationBar(context) : null,
@@ -70,22 +68,11 @@ class BaseLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildConstrainedLayout(BuildContext context) {
-    // For web or large screens, constrain the width to mobile size
+  Widget _buildWebLayout(BuildContext context) {
+    // For web, we'll add some constraints to prevent the content from stretching too wide
     return Center(
       child: Container(
-        width: 400, // Standard mobile width
-        height: double.infinity,
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
+        constraints: const BoxConstraints(maxWidth: 800),
         child: body,
       ),
     );

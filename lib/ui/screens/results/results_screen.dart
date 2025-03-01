@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:provider/provider.dart';
 import '../../../core/models/recognition_result.dart';
 import '../../../core/models/food_item.dart';
-import '../../../core/services/mock_services.dart';
 import '../../../config/constants.dart';
 import 'components/food_info_card.dart';
 import 'components/recognition_item.dart';
@@ -30,8 +28,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
   bool _isLoading = true;
   FoodItem? _selectedFood;
   bool _imageLoadError = false;
-  String? _savedImageUrl;
-  bool _isSavingToHistory = false;
 
   @override
   void initState() {
@@ -62,14 +58,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
     // In a real app, this would fetch from a service
     // For now, we'll create mock data after a short delay
     await Future.delayed(const Duration(milliseconds: 800));
-
-    // Mock saving the image
-    if (widget.imageBytes != null) {
-      // In a real app, this would upload the image to storage
-      _savedImageUrl =
-          'https://example.com/food_images/${DateTime.now().millisecondsSinceEpoch}.jpg';
-      debugPrint('Mock image saved to: $_savedImageUrl');
-    }
 
     // Mock food data based on the top result
     if (widget.results.isNotEmpty) {
@@ -114,7 +102,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           'Cheese',
           'Walnuts',
         ],
-        imageUrl: _savedImageUrl ?? '',
+        imageUrl: '',
       );
     }
 
@@ -177,7 +165,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String? value) {
+  Widget _buildInfoRow(String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -187,9 +175,37 @@ class _ResultsScreenState extends State<ResultsScreen> {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(value ?? ''),
+          child: Text(value),
         ),
       ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -197,437 +213,479 @@ class _ResultsScreenState extends State<ResultsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Food Results'),
+        title: const Text('Identification Results'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _isSavingToHistory ? null : _saveToHistory,
-            tooltip: 'Save to History',
-          ),
-          IconButton(
-            icon: const Icon(Icons.camera_alt),
+            icon: const Icon(Icons.favorite_border),
             onPressed: () {
-              Navigator.of(context).pushReplacementNamed('/camera');
+              // Handle adding to favorites
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Added to favorites'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
             },
-            tooltip: 'Take Another Photo',
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _buildResultsContent(),
+      floatingActionButton: !_isLoading
+          ? FloatingActionButton(
+              onPressed: () {
+                // Handle sharing
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Sharing...'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+              child: const Icon(Icons.share),
+              tooltip: 'Share',
+            )
+          : null,
     );
-  }
-
-  Future<void> _saveToHistory() async {
-    if (_selectedFood == null) return;
-
-    setState(() {
-      _isSavingToHistory = true;
-    });
-
-    try {
-      // In a real app, this would save to a database
-      // For now, we'll just simulate a delay
-      await Future.delayed(const Duration(milliseconds: 800));
-
-      // Create a mock history entry
-      final historyEntry = {
-        'foodId': _selectedFood!.id,
-        'foodName': _selectedFood!.name,
-        'category': _selectedFood!.category,
-        'imageUrl': _savedImageUrl ?? '',
-        'timestamp': DateTime.now().toIso8601String(),
-        'note': 'Discovered using Food Finder app',
-      };
-
-      debugPrint('Saving to history: ${historyEntry['foodName']}');
-
-      // Show success message
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${_selectedFood!.name} saved to history'),
-          action: SnackBarAction(
-            label: 'VIEW',
-            onPressed: () {
-              // Navigate to history or profile screen
-              Navigator.of(context).pushNamed('/profile');
-            },
-          ),
-        ),
-      );
-    } catch (e) {
-      debugPrint('Error saving to history: $e');
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving to history: $e')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSavingToHistory = false;
-        });
-      }
-    }
   }
 
   Widget _buildResultsContent() {
     if (widget.results.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-                'No food detected. Please try again with a clearer image.'),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.camera_alt),
-              label: const Text('Take Another Photo'),
-              onPressed: () {
-                Navigator.of(context).pushReplacementNamed('/camera');
-              },
-            ),
-          ],
-        ),
+      return const Center(
+        child: Text('No results found. Try again with a clearer image.'),
       );
     }
 
     return SingleChildScrollView(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image section - centered
-          Center(child: _buildImageSection()),
+          // Display the actual food image with improved styling
+          Stack(
+            children: [
+              Container(
+                width: double.infinity,
+                height: 250,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 3,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: _buildImageWidget(),
+              ),
+              // Add a gradient overlay at the bottom for better text visibility
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.7),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Add the food name on the image
+              if (_selectedFood != null)
+                Positioned(
+                  bottom: 16,
+                  left: 16,
+                  right: 16,
+                  child: Text(
+                    _selectedFood!.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          offset: Offset(1, 1),
+                          blurRadius: 3,
+                          color: Colors.black45,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
 
-          // Results section
-          Padding(
+          // Recognition confidence section with improved styling
+          Container(
             padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Recognition Results',
-                  style: Theme.of(context).textTheme.titleLarge,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Recognition Results',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 ...widget.results.map((result) => RecognitionItem(
                       result: result,
                       isSelected: widget.results.indexOf(result) == 0,
                       onTap: () {
                         // In a real app, this would load details for the selected item
-                        debugPrint('Selected: ${result.label}');
                       },
                     )),
-                const SizedBox(height: 24),
-
-                // Food details section
-                if (_selectedFood != null) _buildFoodDetailsSection(),
               ],
             ),
           ),
+
+          const SizedBox(height: 16),
+
+          // Food information section with improved styling
+          if (_selectedFood != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Category badge
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.5),
+                      ),
+                    ),
+                    child: Text(
+                      _selectedFood!.category,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Nutritional information card
+                  FoodInfoCard(
+                    title: 'Nutritional Information',
+                    icon: Icons.restaurant,
+                    child: Column(
+                      children: [
+                        _buildNutritionRow(
+                          'Calories',
+                          '${_selectedFood!.nutritionalInfo.calories} kcal',
+                          Icons.local_fire_department,
+                          Colors.orange,
+                        ),
+                        _buildNutritionRow(
+                          'Protein',
+                          _selectedFood!.nutritionalInfo.protein,
+                          Icons.fitness_center,
+                          Colors.red,
+                        ),
+                        _buildNutritionRow(
+                          'Carbs',
+                          _selectedFood!.nutritionalInfo.carbs,
+                          Icons.grain,
+                          Colors.amber,
+                        ),
+                        _buildNutritionRow(
+                          'Fat',
+                          _selectedFood!.nutritionalInfo.fat,
+                          Icons.opacity,
+                          Colors.yellow,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Description card
+                  FoodInfoCard(
+                    title: 'Description',
+                    icon: Icons.info_outline,
+                    child: Text(_selectedFood!.description),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Origin & Seasonality card
+                  FoodInfoCard(
+                    title: 'Origin & Seasonality',
+                    icon: Icons.public,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildInfoRow('Origin:', _selectedFood!.origin),
+                        const SizedBox(height: 8),
+                        _buildInfoRow(
+                            'Seasonality:', _selectedFood!.seasonality),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Storage guidance card
+                  FoodInfoCard(
+                    title: 'Storage Guidance',
+                    icon: Icons.kitchen,
+                    child: Text(_selectedFood!.storageGuidance),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Common uses card
+                  FoodInfoCard(
+                    title: 'Common Uses',
+                    icon: Icons.restaurant_menu,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _selectedFood!.commonUses
+                          .map((use) => Chip(
+                                label: Text(use),
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.surface,
+                              ))
+                          .toList(),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Pairings card
+                  FoodInfoCard(
+                    title: 'Pairs Well With',
+                    icon: Icons.interests,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _selectedFood!.pairings
+                          .map((pairing) => Chip(
+                                label: Text(pairing),
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.surface,
+                              ))
+                          .toList(),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Action buttons
+                  Container(
+                    margin: const EdgeInsets.only(top: 16, bottom: 32),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          spreadRadius: 1,
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'What would you like to do?',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildActionButton(
+                              icon: Icons.restaurant_menu,
+                              label: 'Find Recipes',
+                              onTap: () {
+                                // Navigate to recipes
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Finding recipes...'),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+                              },
+                            ),
+                            _buildActionButton(
+                              icon: Icons.shopping_cart,
+                              label: 'Where to Buy',
+                              onTap: () {
+                                // Show shopping options
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Finding stores...'),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+                              },
+                            ),
+                            _buildActionButton(
+                              icon: Icons.more_horiz,
+                              label: 'More Info',
+                              onTap: () {
+                                // Show additional information
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content:
+                                        Text('Loading more information...'),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildImageSection() {
-    // Calculate the screen width to make a perfect square
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    // Use the smaller dimension to ensure the image fits on screen
-    final imageSize =
-        screenWidth > screenHeight / 2 ? screenHeight / 2 : screenWidth;
+  Widget _buildImageWidget() {
+    // If we have image bytes (primarily for web)
+    if (widget.imageBytes != null && widget.imageBytes!.isNotEmpty) {
+      debugPrint(
+          'Displaying image from bytes: ${widget.imageBytes!.length} bytes');
 
-    return Container(
-      height: imageSize,
-      width: imageSize,
-      margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.1),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-          width: 1,
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: _imageLoadError
-          ? const Center(
-              child: Icon(
-                Icons.broken_image,
-                size: 64,
-                color: Colors.grey,
-              ),
-            )
-          : _buildImageContent(),
-    );
-  }
+      // Add a key to force rebuild when image changes
+      return Image.memory(
+        widget.imageBytes!,
+        fit: BoxFit.cover,
+        key: ValueKey('image-bytes-${widget.imageBytes!.length}'),
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('Error displaying image from bytes: $error');
+          setState(() {
+            _imageLoadError = true;
+          });
+          return _buildImagePlaceholder();
+        },
+      );
+    }
 
-  Widget _buildImageContent() {
-    try {
-      if (widget.imageBytes != null) {
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            Center(
-              child: Image.memory(
-                widget.imageBytes!,
-                fit: BoxFit
-                    .contain, // Changed from cover to contain to show the entire image
-                errorBuilder: (context, error, stackTrace) {
-                  debugPrint('Error loading image bytes: $error');
-                  setState(() {
-                    _imageLoadError = true;
-                  });
-                  return const Center(
-                    child: Icon(
-                      Icons.broken_image,
-                      size: 64,
-                      color: Colors.grey,
-                    ),
-                  );
-                },
-              ),
-            ),
-            // Add a subtle border overlay instead of gradient
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.black.withOpacity(0.1),
-                    width: 1,
-                  ),
-                ),
-              ),
-            ),
-          ],
+    // If we have an image path (primarily for mobile)
+    else if (widget.imagePath != null && widget.imagePath!.isNotEmpty) {
+      debugPrint('Displaying image from file: ${widget.imagePath}');
+      try {
+        // Add a key to force rebuild when image changes
+        return Image.file(
+          File(widget.imagePath!),
+          fit: BoxFit.cover,
+          key: ValueKey('image-file-${widget.imagePath}'),
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('Error displaying image from file: $error');
+            setState(() {
+              _imageLoadError = true;
+            });
+            return _buildImagePlaceholder();
+          },
         );
-      } else if (widget.imagePath != null && !kIsWeb) {
-        final file = File(widget.imagePath!);
-        if (!file.existsSync()) {
-          debugPrint('Image file does not exist: ${widget.imagePath}');
-          return const Center(
-            child: Icon(
-              Icons.broken_image,
-              size: 64,
-              color: Colors.grey,
-            ),
-          );
-        }
-
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            Center(
-              child: Image.file(
-                file,
-                fit: BoxFit
-                    .contain, // Changed from cover to contain to show the entire image
-                errorBuilder: (context, error, stackTrace) {
-                  debugPrint('Error loading image file: $error');
-                  setState(() {
-                    _imageLoadError = true;
-                  });
-                  return const Center(
-                    child: Icon(
-                      Icons.broken_image,
-                      size: 64,
-                      color: Colors.grey,
-                    ),
-                  );
-                },
-              ),
-            ),
-            // Add a subtle border overlay instead of gradient
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.black.withOpacity(0.1),
-                    width: 1,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      } else {
-        return const Center(
-          child: Icon(
-            Icons.image_not_supported,
-            size: 64,
-            color: Colors.grey,
-          ),
-        );
+      } catch (e) {
+        debugPrint('Exception when creating Image.file: $e');
+        return _buildImagePlaceholder();
       }
-    } catch (e) {
-      debugPrint('Exception in _buildImageContent: $e');
-      return const Center(
-        child: Icon(
-          Icons.error_outline,
-          size: 64,
-          color: Colors.red,
-        ),
-      );
+    }
+
+    // Fallback to placeholder
+    else {
+      debugPrint('No image data available, showing placeholder');
+      return _buildImagePlaceholder();
     }
   }
 
-  Widget _buildFoodDetailsSection() {
-    if (_selectedFood == null) {
-      return const Center(
-        child: Text('Food details not available'),
-      );
-    }
+  Widget _buildImagePlaceholder() {
+    final String firstLetter =
+        _selectedFood?.name.substring(0, 1).toUpperCase() ?? 'F';
+    debugPrint('Building placeholder with letter: $firstLetter');
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Category badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withAlpha(26),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.primary.withAlpha(128),
-            ),
-          ),
-          child: Text(
-            _selectedFood!.category,
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            firstLetter,
             style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.w500,
+              fontSize: 80,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[500],
             ),
           ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Nutritional information card
-        FoodInfoCard(
-          title: 'Nutritional Information',
-          icon: Icons.restaurant,
-          child: Column(
-            children: [
-              _buildNutritionRow(
-                'Calories',
-                '${_selectedFood!.nutritionalInfo.calories} kcal',
-                Icons.local_fire_department,
-                Colors.orange,
+          if (_imageLoadError)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text(
+                'Image could not be displayed',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                ),
               ),
-              _buildNutritionRow(
-                'Protein',
-                _selectedFood!.nutritionalInfo.protein,
-                Icons.fitness_center,
-                Colors.red,
-              ),
-              _buildNutritionRow(
-                'Carbs',
-                _selectedFood!.nutritionalInfo.carbs,
-                Icons.grain,
-                Colors.amber,
-              ),
-              _buildNutritionRow(
-                'Fat',
-                _selectedFood!.nutritionalInfo.fat,
-                Icons.opacity,
-                Colors.yellow,
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Description card
-        if (_selectedFood!.description != null &&
-            _selectedFood!.description!.isNotEmpty)
-          FoodInfoCard(
-            title: 'Description',
-            icon: Icons.info_outline,
-            child: Text(_selectedFood!.description ?? ''),
-          ),
-
-        const SizedBox(height: 16),
-
-        // Origin & Seasonality card
-        if ((_selectedFood!.origin != null &&
-                _selectedFood!.origin!.isNotEmpty) ||
-            (_selectedFood!.seasonality != null &&
-                _selectedFood!.seasonality!.isNotEmpty))
-          FoodInfoCard(
-            title: 'Origin & Seasonality',
-            icon: Icons.public,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_selectedFood!.origin != null &&
-                    _selectedFood!.origin!.isNotEmpty)
-                  _buildInfoRow('Origin:', _selectedFood!.origin),
-                if (_selectedFood!.origin != null &&
-                    _selectedFood!.origin!.isNotEmpty &&
-                    _selectedFood!.seasonality != null &&
-                    _selectedFood!.seasonality!.isNotEmpty)
-                  const SizedBox(height: 8),
-                if (_selectedFood!.seasonality != null &&
-                    _selectedFood!.seasonality!.isNotEmpty)
-                  _buildInfoRow('Seasonality:', _selectedFood!.seasonality),
-              ],
             ),
-          ),
-
-        const SizedBox(height: 16),
-
-        // Storage guidance card
-        if (_selectedFood!.storageGuidance != null &&
-            _selectedFood!.storageGuidance!.isNotEmpty)
-          FoodInfoCard(
-            title: 'Storage Guidance',
-            icon: Icons.kitchen,
-            child: Text(_selectedFood!.storageGuidance ?? ''),
-          ),
-
-        const SizedBox(height: 16),
-
-        // Common uses card
-        if (_selectedFood!.commonUses.isNotEmpty)
-          FoodInfoCard(
-            title: 'Common Uses',
-            icon: Icons.restaurant_menu,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _selectedFood!.commonUses
-                  .map((use) => Chip(
-                        label: Text(use),
-                        backgroundColor: Theme.of(context).colorScheme.surface,
-                      ))
-                  .toList(),
-            ),
-          ),
-
-        const SizedBox(height: 16),
-
-        // Pairings card
-        if (_selectedFood!.pairings.isNotEmpty)
-          FoodInfoCard(
-            title: 'Pairs Well With',
-            icon: Icons.interests,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _selectedFood!.pairings
-                  .map((pairing) => Chip(
-                        label: Text(pairing),
-                        backgroundColor: Theme.of(context).colorScheme.surface,
-                      ))
-                  .toList(),
-            ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

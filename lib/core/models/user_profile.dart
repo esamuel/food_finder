@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserProfile extends Equatable {
   final String id;
@@ -8,7 +9,7 @@ class UserProfile extends Equatable {
   final List<String> favoriteItems;
   final List<UserHistory> historyItems;
   final UserPreferences preferences;
-  
+
   const UserProfile({
     required this.id,
     this.displayName,
@@ -18,18 +19,18 @@ class UserProfile extends Equatable {
     this.historyItems = const [],
     this.preferences = const UserPreferences(),
   });
-  
+
   @override
   List<Object?> get props => [
-    id, 
-    displayName, 
-    email, 
-    photoUrl, 
-    favoriteItems, 
-    historyItems, 
-    preferences
-  ];
-  
+        id,
+        displayName,
+        email,
+        photoUrl,
+        favoriteItems,
+        historyItems,
+        preferences
+      ];
+
   UserProfile copyWith({
     String? id,
     String? displayName,
@@ -49,27 +50,27 @@ class UserProfile extends Equatable {
       preferences: preferences ?? this.preferences,
     );
   }
-  
+
+  // Create UserProfile from Firestore document
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
       id: json['id'] as String,
       displayName: json['displayName'] as String?,
       email: json['email'] as String?,
       photoUrl: json['photoUrl'] as String?,
-      favoriteItems: json['favoriteItems'] != null 
-          ? List<String>.from(json['favoriteItems'] as List)
-          : [],
-      historyItems: json['historyItems'] != null 
-          ? (json['historyItems'] as List)
-              .map((e) => UserHistory.fromJson(e as Map<String, dynamic>))
-              .toList()
-          : [],
-      preferences: json['preferences'] != null 
-          ? UserPreferences.fromJson(json['preferences'] as Map<String, dynamic>)
+      favoriteItems: List<String>.from(json['favoriteItems'] ?? []),
+      historyItems: (json['historyItems'] as List<dynamic>?)
+              ?.map((e) => UserHistory.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      preferences: json['preferences'] != null
+          ? UserPreferences.fromJson(
+              json['preferences'] as Map<String, dynamic>)
           : const UserPreferences(),
     );
   }
-  
+
+  // Convert UserProfile to Firestore document
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -87,80 +88,83 @@ class UserHistory extends Equatable {
   final String foodId;
   final DateTime timestamp;
   final String? note;
-  
+
   const UserHistory({
     required this.foodId,
     required this.timestamp,
     this.note,
   });
-  
+
   @override
   List<Object?> get props => [foodId, timestamp, note];
-  
+
   factory UserHistory.fromJson(Map<String, dynamic> json) {
     return UserHistory(
       foodId: json['foodId'] as String,
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      timestamp: (json['timestamp'] as Timestamp).toDate(),
       note: json['note'] as String?,
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'foodId': foodId,
-      'timestamp': timestamp.toIso8601String(),
+      'timestamp': Timestamp.fromDate(timestamp),
       'note': note,
     };
   }
 }
 
 class UserPreferences extends Equatable {
-  final bool darkMode;
-  final String? dietaryRestriction;
+  final bool isDarkMode;
+  final List<String> dietaryRestrictions;
   final List<String> allergies;
-  final bool notificationsEnabled;
-  
+  final String? defaultLanguage;
+
   const UserPreferences({
-    this.darkMode = false,
-    this.dietaryRestriction,
+    this.isDarkMode = false,
+    this.dietaryRestrictions = const [],
     this.allergies = const [],
-    this.notificationsEnabled = true,
+    this.defaultLanguage,
   });
-  
+
   @override
-  List<Object?> get props => [darkMode, dietaryRestriction, allergies, notificationsEnabled];
-  
+  List<Object?> get props => [
+        isDarkMode,
+        dietaryRestrictions,
+        allergies,
+        defaultLanguage,
+      ];
+
   UserPreferences copyWith({
-    bool? darkMode,
-    String? dietaryRestriction,
+    bool? isDarkMode,
+    List<String>? dietaryRestrictions,
     List<String>? allergies,
-    bool? notificationsEnabled,
+    String? defaultLanguage,
   }) {
     return UserPreferences(
-      darkMode: darkMode ?? this.darkMode,
-      dietaryRestriction: dietaryRestriction ?? this.dietaryRestriction,
+      isDarkMode: isDarkMode ?? this.isDarkMode,
+      dietaryRestrictions: dietaryRestrictions ?? this.dietaryRestrictions,
       allergies: allergies ?? this.allergies,
-      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      defaultLanguage: defaultLanguage ?? this.defaultLanguage,
     );
   }
-  
+
   factory UserPreferences.fromJson(Map<String, dynamic> json) {
     return UserPreferences(
-      darkMode: json['darkMode'] as bool? ?? false,
-      dietaryRestriction: json['dietaryRestriction'] as String?,
-      allergies: json['allergies'] != null 
-          ? List<String>.from(json['allergies'] as List)
-          : [],
-      notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
+      isDarkMode: json['isDarkMode'] as bool? ?? false,
+      dietaryRestrictions: List<String>.from(json['dietaryRestrictions'] ?? []),
+      allergies: List<String>.from(json['allergies'] ?? []),
+      defaultLanguage: json['defaultLanguage'] as String?,
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
-      'darkMode': darkMode,
-      'dietaryRestriction': dietaryRestriction,
+      'isDarkMode': isDarkMode,
+      'dietaryRestrictions': dietaryRestrictions,
       'allergies': allergies,
-      'notificationsEnabled': notificationsEnabled,
+      'defaultLanguage': defaultLanguage,
     };
   }
 }

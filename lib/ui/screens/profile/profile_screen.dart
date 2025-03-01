@@ -108,11 +108,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: OutlinedButton.icon(
               onPressed: () {
                 // Handle logout
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text(
-                          'Logout functionality would be implemented here')),
-                );
               },
               icon: const Icon(Icons.logout),
               label: const Text('Log Out'),
@@ -159,11 +154,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.person,
-              size: 50,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            child: _userProfile!.photoUrl != null &&
+                    _userProfile!.photoUrl!.isNotEmpty
+                ? ClipOval(
+                    child: Image.network(
+                      _userProfile!.photoUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.person,
+                        size: 50,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  )
+                : Icon(
+                    Icons.person,
+                    size: 50,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
           ),
 
           const SizedBox(height: 16),
@@ -194,11 +202,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton.icon(
             onPressed: () {
               // Navigate to edit profile
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text(
-                        'Edit profile functionality would be implemented here')),
-              );
             },
             icon: const Icon(Icons.edit, size: 16),
             label: const Text('Edit Profile'),
@@ -232,10 +235,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _isDarkMode = value;
             });
             // In a real app, this would update the theme
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text('Dark mode ${value ? 'enabled' : 'disabled'}')),
-            );
           },
           secondary: const Icon(Icons.brightness_4),
         ),
@@ -247,11 +246,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           value: _userProfile!.preferences.notificationsEnabled,
           onChanged: (value) {
             // Update notifications setting
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content:
-                      Text('Notifications ${value ? 'enabled' : 'disabled'}')),
-            );
           },
           secondary: const Icon(Icons.notifications),
         ),
@@ -259,46 +253,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 16),
 
         // Dietary restrictions
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.restaurant),
-            title: const Text('Dietary Restrictions'),
-            subtitle:
-                Text(_userProfile!.preferences.dietaryRestriction ?? 'None'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // Navigate to dietary restrictions page
-              _showDietaryRestrictionsDialog();
-            },
-          ),
+        ListTile(
+          leading: const Icon(Icons.restaurant),
+          title: const Text('Dietary Restrictions'),
+          subtitle:
+              Text(_userProfile!.preferences.dietaryRestriction ?? 'None'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            // Navigate to dietary restrictions page
+          },
         ),
 
-        const SizedBox(height: 12),
-
         // Allergies
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        ListTile(
+          leading: const Icon(Icons.health_and_safety),
+          title: const Text('Allergies'),
+          subtitle: Text(
+            _userProfile!.preferences.allergies.isNotEmpty
+                ? _userProfile!.preferences.allergies.join(', ')
+                : 'None',
           ),
-          child: ListTile(
-            leading: const Icon(Icons.health_and_safety),
-            title: const Text('Allergies'),
-            subtitle: Text(
-              _userProfile!.preferences.allergies.isNotEmpty
-                  ? _userProfile!.preferences.allergies.join(', ')
-                  : 'None',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // Navigate to allergies page
-              _showAllergiesDialog();
-            },
-          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            // Navigate to allergies page
+          },
         ),
       ],
     );
@@ -319,218 +297,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 16),
 
         // Favorites
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.favorite, color: Colors.red),
-            title: const Text('Favorites'),
-            subtitle: Text('${_userProfile!.favoriteItems.length} items'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // Navigate to favorites page
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text(
-                        'Favorites functionality would be implemented here')),
-              );
-            },
-          ),
+        ListTile(
+          leading: const Icon(Icons.favorite, color: Colors.red),
+          title: const Text('Favorites'),
+          subtitle: Text('${_userProfile!.favoriteItems.length} items'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            // Navigate to favorites page
+          },
         ),
-
-        const SizedBox(height: 12),
 
         // History
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.history),
-            title: const Text('History'),
-            subtitle: Text('${_userProfile!.historyItems.length} items'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // Navigate to history page
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text(
-                        'History functionality would be implemented here')),
-              );
-            },
-          ),
+        ListTile(
+          leading: const Icon(Icons.history),
+          title: const Text('History'),
+          subtitle: Text('${_userProfile!.historyItems.length} items'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            // Navigate to history page
+          },
         ),
-
-        const SizedBox(height: 12),
 
         // Saved recipes
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.menu_book),
-            title: const Text('Saved Recipes'),
-            subtitle: const Text('0 recipes'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // Show saved recipes
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text(
-                        'Saved recipes functionality would be implemented here')),
-              );
-            },
-          ),
+        const ListTile(
+          leading: Icon(Icons.menu_book),
+          title: Text('Saved Recipes'),
+          subtitle: Text('0 recipes'),
+          trailing: Icon(Icons.chevron_right),
         ),
-
-        const SizedBox(height: 12),
 
         // Statistics
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            leading: Icon(Icons.bar_chart, color: Colors.purple[400]),
-            title: const Text('Statistics'),
-            subtitle: const Text('View your food discovery trends'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // Navigate to statistics page
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text(
-                        'Statistics functionality would be implemented here')),
-              );
-            },
-          ),
+        ListTile(
+          leading: Icon(Icons.bar_chart, color: Colors.purple[400]),
+          title: const Text('Statistics'),
+          subtitle: const Text('View your food discovery trends'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            // Navigate to statistics page
+          },
         ),
       ],
-    );
-  }
-
-  void _showDietaryRestrictionsDialog() {
-    final List<String> options = [
-      'None',
-      'Vegetarian',
-      'Vegan',
-      'Pescatarian',
-      'Gluten-Free',
-      'Dairy-Free',
-      'Keto',
-      'Paleo',
-    ];
-
-    String selected = _userProfile!.preferences.dietaryRestriction ?? 'None';
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Dietary Restrictions'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: options.length,
-            itemBuilder: (context, index) {
-              return RadioListTile<String>(
-                title: Text(options[index]),
-                value: options[index],
-                groupValue: selected,
-                onChanged: (value) {
-                  setState(() {
-                    selected = value!;
-                  });
-                },
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL'),
-          ),
-          TextButton(
-            onPressed: () {
-              // Update preference
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text('Dietary restriction updated to: $selected')),
-              );
-              Navigator.pop(context);
-            },
-            child: const Text('SAVE'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAllergiesDialog() {
-    final List<String> options = [
-      'Peanuts',
-      'Tree Nuts',
-      'Milk',
-      'Eggs',
-      'Fish',
-      'Shellfish',
-      'Soy',
-      'Wheat',
-    ];
-
-    List<String> selected = List.from(_userProfile!.preferences.allergies);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Allergies'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: options.length,
-            itemBuilder: (context, index) {
-              return CheckboxListTile(
-                title: Text(options[index]),
-                value: selected.contains(options[index]),
-                onChanged: (value) {
-                  setState(() {
-                    if (value!) {
-                      selected.add(options[index]);
-                    } else {
-                      selected.remove(options[index]);
-                    }
-                  });
-                },
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL'),
-          ),
-          TextButton(
-            onPressed: () {
-              // Update allergies
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text('Allergies updated: ${selected.join(", ")}')),
-              );
-              Navigator.pop(context);
-            },
-            child: const Text('SAVE'),
-          ),
-        ],
-      ),
     );
   }
 }

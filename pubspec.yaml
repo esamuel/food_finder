@@ -1,8 +1,6 @@
 name: food_finder
-description: A food recognition application similar to "Picture This" but for food.
-
-publish_to: 'none' # Do not publish to pub.dev
-
+description: A food recognition app
+publish_to: 'none'
 version: 1.0.0+1
 
 environment:
@@ -12,86 +10,26 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  
-  # State management
-  flutter_bloc: ^8.1.3
-  equatable: ^2.0.5
-  
-  # Firebase - commented out for web development
-  firebase_core: ^2.24.2
-  # firebase_auth: ^4.15.3
-  # cloud_firestore: ^4.13.6
-  # firebase_storage: ^11.5.6
-  
-  # Camera and image processing
-  # Commenting out problematic dependencies for now
-  camera: ^0.10.5+2
-  camera_web: ^0.3.2+1
-  image: ^4.0.17
-  path_provider: ^2.1.0
+  camera: ^0.10.6
+  path_provider: ^2.0.15
   path: ^1.8.3
-  
-  # Machine learning
-  tflite_flutter: ^0.10.1
-  
-  # UI components
-  google_fonts: ^6.1.0
-  flutter_svg: ^2.0.7
-  cached_network_image: ^3.2.3
-  
-  # HTTP and API
-  http: ^1.1.0
-  dio: ^5.3.2
-  
-  # Storage
+  image_picker: ^1.0.4
+  provider: ^6.0.5
   shared_preferences: ^2.2.0
-  # hive: ^2.2.3
-  # hive_flutter: ^1.1.0
-  
-  # Utilities
-  intl: ^0.18.1
-  uuid: ^3.0.7
-  logger: ^1.4.0
-  
-  # Web specific
+  http: ^1.1.0
+  supabase_flutter: ^2.3.4
+  equatable: ^2.0.5
+  image: ^4.1.3
   flutter_web_plugins:
     sdk: flutter
-  go_router: ^10.1.2
-  flutter_dotenv: ^5.1.0
-  provider: ^6.0.5
-  image_picker: ^1.0.2
-  url_launcher: ^6.1.12
-  flutter_cache_manager: ^3.3.1
-  shimmer: ^3.0.0
-  lottie: ^2.6.0
-  # permission_handler: ^10.4.3
-  flutter_markdown: ^0.6.17
+  uuid: ^3.0.7
+  intl: ^0.18.1
+  dio: ^5.4.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.2
-  build_runner: ^2.4.6
-  hive_generator: ^2.0.1
-  mockito: ^5.4.2
-  flutter_launcher_icons: ^0.13.1
+  flutter_lints: ^2.0.0
 
 flutter:
   uses-material-design: true
-  
-  assets:
-    - assets/images/
-    - assets/icons/
-    - assets/ml/
-
-  # Using Google Fonts package instead of local font files
-  # fonts:
-  #   - family: Poppins
-  #     fonts:
-  #       - asset: assets/fonts/Poppins-Regular.ttf
-  #       - asset: assets/fonts/Poppins-Bold.ttf
-  #         weight: 700
-  #       - asset: assets/fonts/Poppins-Medium.ttf
-  #         weight: 500
-  #       - asset: assets/fonts/Poppins-Light.ttf
-  #         weight: 300

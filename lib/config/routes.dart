@@ -35,7 +35,9 @@ class AppRoutes {
 
       case camera:
         return MaterialPageRoute(
-          builder: (_) => const CameraScreen(),
+          builder: (_) => const Scaffold(
+            body: Center(child: Text('Camera Screen')),
+          ),
         );
 
       case results:
@@ -45,7 +47,7 @@ class AppRoutes {
         final imagePath = args?['imagePath'] as String?;
 
         debugPrint('Routes: Passing to ResultsScreen:');
-        debugPrint('  - ${results.length} recognition results');
+        debugPrint('  - ${results.length} results');
         if (imageBytes != null) {
           debugPrint('  - imageBytes: ${imageBytes.length} bytes');
         } else {
@@ -70,7 +72,9 @@ class AppRoutes {
 
       case profile:
         return MaterialPageRoute(
-          builder: (_) => const ProfileScreen(),
+          builder: (_) => const Scaffold(
+            body: Center(child: Text('Profile Screen')),
+          ),
         );
 
       case foodDetails:
