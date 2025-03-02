@@ -15,6 +15,7 @@ import '../../../core/models/scan_history_item.dart';
 import '../../core/services/favorites_service.dart';
 import '../../core/services/food_recognition_service_factory.dart';
 import '../food_category/food_category_screen.dart';
+import '../profile/profile_edit_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -25,6 +26,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  FoodRecognitionServiceType _selectedService = FoodRecognitionServiceType.mock;
+  List<FoodRecognitionServiceType> _availableServices = [];
 
   final List<Widget> _screens = [
     const DashboardTab(),
@@ -32,6 +35,83 @@ class _HomeScreenState extends State<HomeScreen> {
     const HistoryTab(),
     const ProfileTab(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvailableServices();
+  }
+
+  void _loadAvailableServices() {
+    setState(() {
+      _availableServices = FoodRecognitionServiceFactory.getAvailableServices();
+      // Set the default to the best available service
+      if (_availableServices
+          .contains(FoodRecognitionServiceType.googleVision)) {
+        _selectedService = FoodRecognitionServiceType.googleVision;
+      } else if (_availableServices
+          .contains(FoodRecognitionServiceType.clarifai)) {
+        _selectedService = FoodRecognitionServiceType.clarifai;
+      } else {
+        _selectedService = FoodRecognitionServiceType.mock;
+      }
+    });
+  }
+
+  // Build the service selector widget
+  Widget _buildServiceSelector() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Recognition Service:',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 8),
+          DropdownButton<FoodRecognitionServiceType>(
+            value: _selectedService,
+            underline: const SizedBox(),
+            icon: const Icon(Icons.arrow_drop_down, color: Colors.green),
+            items: _availableServices.map((service) {
+              return DropdownMenuItem<FoodRecognitionServiceType>(
+                value: service,
+                child: Text(
+                  FoodRecognitionServiceFactory.getServiceName(service),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _selectedService = value;
+                });
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,27 +142,30 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
       body: _screens[_selectedIndex],
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showFoodRecognitionOptions();
-        },
-        backgroundColor: Colors.green,
-        child: const Icon(Icons.camera_alt),
-      ),
+      floatingActionButton: _selectedIndex == 0
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildServiceSelector(),
+                const SizedBox(height: 16),
+                FloatingActionButton.extended(
+                  onPressed: _showFoodRecognitionOptions,
+                  backgroundColor: Colors.green,
+                  icon: const Icon(Icons.camera_alt),
+                  label: const Text('Scan Food'),
+                ),
+              ],
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.green,
         unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
+            icon: Icon(Icons.home),
             label: 'Home',
           ),
           BottomNavigationBarItem(
@@ -98,55 +181,52 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Profile',
           ),
         ],
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
       ),
     );
   }
 
+  // Show options for food recognition (camera or gallery)
   void _showFoodRecognitionOptions() {
     showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt, color: Colors.green),
-                title: const Text('Take a Photo'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _takePicture();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library, color: Colors.green),
-                title: const Text('Choose from Gallery'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage();
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Colors.green),
+              title: const Text('Take a Photo'),
+              onTap: () {
+                Navigator.pop(context);
+                _takePicture();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Colors.green),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage();
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
+  // Take a picture with the camera
   Future<void> _takePicture() async {
     try {
-      // Check if running on iOS and handle permissions
-      if (!kIsWeb && Platform.isIOS) {
-        // Show loading indicator while checking camera availability
-        _showLoadingDialog(message: 'Checking camera...');
-      }
-
       // Get available cameras
       final cameras = await availableCameras();
-
-      // Hide loading if it was shown
-      if (!kIsWeb && Platform.isIOS && Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
 
       if (cameras.isEmpty) {
         _showErrorSnackBar('No cameras available on this device');
@@ -154,48 +234,30 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       // Navigate to camera screen
-      final XFile? imageFile = await Navigator.push(
+      final result = await Navigator.push<XFile?>(
         context,
         MaterialPageRoute(
           builder: (context) => CameraScreen(camera: cameras.first),
         ),
       );
 
-      if (imageFile != null) {
+      if (result != null) {
         if (kIsWeb) {
-          final bytes = await imageFile.readAsBytes();
-          _processImageBytes(bytes, imageFile.name, true);
+          final bytes = await result.readAsBytes();
+          _processImageBytes(bytes, result.name, true);
         } else {
-          _processImage(File(imageFile.path), true);
+          _processImage(File(result.path), true);
         }
       }
     } catch (e) {
-      // Hide loading if it was shown
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
-
-      String errorMessage = 'Error taking picture';
-
-      // Provide more specific error messages for common issues
-      if (e.toString().contains('permission')) {
-        errorMessage =
-            'Camera permission denied. Please enable camera access in your device settings.';
-      } else if (e.toString().contains('CameraAccessDenied')) {
-        errorMessage =
-            'Camera access denied. Please enable camera access in your device settings.';
-      } else if (e.toString().contains('path_provider')) {
-        errorMessage =
-            'Error accessing device storage. Please check app permissions.';
-      }
-
-      _showErrorSnackBar('$errorMessage: ${e.toString().split('\n').first}');
+      _showErrorSnackBar('Error accessing camera: $e');
     }
   }
 
+  // Pick an image from the gallery
   Future<void> _pickImage() async {
     try {
-      final ImagePicker picker = ImagePicker();
+      final picker = ImagePicker();
 
       // Show loading indicator while checking gallery access
       if (!kIsWeb && Platform.isIOS) {
@@ -243,14 +305,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Process an image file for food recognition
   Future<void> _processImage(File imageFile, bool isFromCamera) async {
     try {
       // Show loading indicator
       _showLoadingDialog();
 
-      // Get the best available food recognition service
+      // Get the selected food recognition service
       final foodRecognitionService =
-          FoodRecognitionServiceFactory.createBestAvailable();
+          FoodRecognitionServiceFactory.create(_selectedService);
 
       // Recognize the food
       final results =
@@ -283,15 +346,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Process image bytes for food recognition (web platform)
   Future<void> _processImageBytes(
       Uint8List bytes, String fileName, bool isFromCamera) async {
     try {
       // Show loading indicator
       _showLoadingDialog();
 
-      // Get the best available food recognition service
+      // Get the selected food recognition service
       final foodRecognitionService =
-          FoodRecognitionServiceFactory.createBestAvailable();
+          FoodRecognitionServiceFactory.create(_selectedService);
 
       // Recognize the food
       final results = await foodRecognitionService.recognizeFood(bytes);
@@ -323,8 +387,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Show a loading dialog with custom message
-  void _showLoadingDialog({String message = 'Processing...'}) {
+  // Show a loading dialog
+  void _showLoadingDialog({String message = 'Processing image...'}) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -335,7 +399,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const CircularProgressIndicator(),
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                ),
                 const SizedBox(width: 20),
                 Text(message),
               ],
@@ -346,62 +412,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Show an error snackbar
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
       ),
     );
-  }
-
-  Widget _buildCameraOptions(BuildContext context) {
-    return SafeArea(
-      child: Wrap(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.camera_alt, color: Colors.green),
-            title: const Text('Take a Photo'),
-            onTap: () {
-              Navigator.pop(context);
-              // Find the HomeScreen state and call _takePicture
-              final homeScreenState =
-                  context.findAncestorStateOfType<_HomeScreenState>();
-              if (homeScreenState != null) {
-                homeScreenState._takePicture();
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Could not access camera')),
-                );
-              }
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.photo_library, color: Colors.green),
-            title: const Text('Choose from Gallery'),
-            onTap: () {
-              Navigator.pop(context);
-              // Find the HomeScreen state and call _pickImage
-              final homeScreenState =
-                  context.findAncestorStateOfType<_HomeScreenState>();
-              if (homeScreenState != null) {
-                homeScreenState._pickImage();
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Could not access gallery')),
-                );
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  void setCurrentIndex(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
   }
 }
 
@@ -486,6 +505,7 @@ class _DashboardTabState extends State<DashboardTab> {
   final ScanHistoryService _historyService = ScanHistoryService();
   List<ScanHistoryItem> _recentScans = [];
   bool _isLoadingHistory = true;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -1606,6 +1626,12 @@ class ProfileTab extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () {
                       // Navigate to edit profile
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileEditScreen(),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,

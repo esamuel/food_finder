@@ -154,11 +154,26 @@ class SupabaseAuthService implements AuthService {
         ...data,
       };
 
-      // Use RLS policy that allows users to create their own profiles
-      await _supabase.from('profiles').insert(profileData);
+      // First check if profile already exists
+      final existingProfile = await _supabase
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (existingProfile != null) {
+        if (kDebugMode) {
+          print('Profile already exists, updating instead');
+        }
+        // Update existing profile
+        await _supabase.from('profiles').update(data).eq('id', userId);
+      } else {
+        // Insert new profile
+        await _supabase.from('profiles').insert(profileData);
+      }
 
       if (kDebugMode) {
-        print('Profile created successfully');
+        print('Profile created/updated successfully');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -172,7 +187,33 @@ class SupabaseAuthService implements AuthService {
   Future<void> _updateUserProfile(
       String userId, Map<String, dynamic> data) async {
     try {
-      await _supabase.from('profiles').update(data).eq('id', userId);
+      // Add updated_at timestamp
+      final updatedData = {
+        ...data,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      // First check if profile exists
+      final existingProfile = await _supabase
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (existingProfile == null) {
+        if (kDebugMode) {
+          print('Profile does not exist, creating instead');
+        }
+        // Create profile if it doesn't exist
+        await _createUserProfile(userId, data);
+      } else {
+        // Update existing profile
+        await _supabase.from('profiles').update(updatedData).eq('id', userId);
+      }
+
+      if (kDebugMode) {
+        print('Profile updated successfully');
+      }
     } catch (e) {
       if (kDebugMode) {
         print('Update profile error: $e');

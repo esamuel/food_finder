@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/supabase_service.dart';
+import '../../core/services/auth/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -14,6 +15,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _displayNameController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -22,7 +24,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _displayNameController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill display name field when email changes
+    _emailController.addListener(() {
+      if (_displayNameController.text.isEmpty) {
+        final email = _emailController.text.trim();
+        if (email.contains('@')) {
+          _displayNameController.text = email.split('@').first;
+        }
+      }
+    });
   }
 
   Future<void> _signUp() async {
@@ -34,20 +51,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     try {
-      final response =
-          await context.read<SupabaseService>().signUpWithEmailAndPassword(
-                _emailController.text.trim(),
-                _passwordController.text.trim(),
-              );
+      // Use the AuthService for signup
+      final authService = context.read<AuthService>();
+      final user = await authService.createUserWithEmailAndPassword(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
 
-      // Create user profile if sign up was successful
-      if (response.user != null) {
-        await context.read<SupabaseService>().createUserProfile(
-          response.user!.id,
-          {
-            'email': _emailController.text.trim(),
-            'display_name': _emailController.text.split('@').first,
-          },
+      // Update display name if provided
+      if (_displayNameController.text.isNotEmpty) {
+        await authService.updateProfile(
+          displayName: _displayNameController.text.trim(),
         );
       }
 
@@ -98,12 +112,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 32),
                 TextFormField(
                   controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
                   ),
-                  keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
@@ -116,16 +129,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
+                  controller: _displayNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Display Name',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a display name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
                   controller: _passwordController,
+                  obscureText: true,
                   decoration: const InputDecoration(
                     labelText: 'Password',
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
                   ),
-                  obscureText: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
+                      return 'Please enter a password';
                     }
                     if (value.length < 6) {
                       return 'Password must be at least 6 characters';
